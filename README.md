@@ -27,7 +27,6 @@ By combining OpenCV with efficient algorithms, this project demonstrates how dee
 ## 🚀 Technologies Used
 - Python
 - OpenCV
-- PyTorch
 - Numpy
 - Matplotlib
 
