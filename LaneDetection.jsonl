@@ -1,0 +1,132 @@
+# %%
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# %%
+left_fit_history = []
+right_fit_history = []
+max_history = 5
+tolerance = 100  
+
+def weighted_average_fit(history, new_fit):
+    if new_fit is None:
+        
+        if len(history) > 0:
+            return np.mean(history, axis=0)
+        else:
+            return None
+    if len(history) == 0:
+        history.append(new_fit)
+        return new_fit
+    
+    last_avg = np.mean(history, axis=0)
+    diff = np.linalg.norm(new_fit - last_avg)
+    if diff > tolerance:
+        
+        return last_avg
+    
+    history.append(new_fit)
+    if len(history) > max_history:
+        history.pop(0)
+    return np.mean(history, axis=0)
+
+def canny(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blur = cv2.GaussianBlur(gray, (5, 5), 0)
+    canny = cv2.Canny(blur, 50, 150)
+    return canny
+
+def region_of_interest(image):
+    height = image.shape[0]
+    width = image.shape[1]
+    polygons = np.array([
+        [(int(0.1*width), height),
+         (int(0.4*width), int(0.6*height)),
+         (int(0.6*width), int(0.6*height)),
+         (int(0.9*width), height)]
+    ])
+    mask = np.zeros_like(image)
+    cv2.fillPoly(mask, polygons, 255)
+    masked_image = cv2.bitwise_and(image, mask)
+    return masked_image
+
+def get_lane_points(lines):
+    left_points = []
+    right_points = []
+    if lines is None:
+        return None, None
+    for line in lines:
+        for x1, y1, x2, y2 in line:
+            slope = (y2 - y1) / (x2 - x1 + 1e-6)
+            if abs(slope) < 0.5:
+                continue
+            if slope < 0:
+                left_points.append((x1, y1))
+                left_points.append((x2, y2))
+            else:
+                right_points.append((x1, y1))
+                right_points.append((x2, y2))
+    return left_points if left_points else None, right_points if right_points else None
+
+def fit_poly(points):
+    if points is None or len(points) < 2:
+        return None
+    points = np.array(points)
+    x = points[:, 0]
+    y = points[:, 1]
+    fit = np.polyfit(y, x, 2)
+    return fit
+
+def draw_curve(image, fit, color=(0, 255, 0), thickness=5):
+    if fit is None:
+        return
+    y_vals = np.linspace(image.shape[0]*0.6, image.shape[0], num=100)
+    x_vals = fit[0]*y_vals**2 + fit[1]*y_vals + fit[2]
+    points = np.array([np.transpose(np.vstack([x_vals, y_vals]))], np.int32)
+    cv2.polylines(image, points, isClosed=False, color=color, thickness=thickness)
+
+def process_frame(frame):
+    global left_fit_history, right_fit_history
+
+    resized_frame = cv2.resize(frame, (640, 360))
+    canny_image = canny(resized_frame)
+    cropped_canny = region_of_interest(canny_image)
+
+    lines = cv2.HoughLinesP(cropped_canny, 2, np.pi / 180, threshold=50, minLineLength=50, maxLineGap=100)
+    
+    left_points, right_points = get_lane_points(lines)
+
+    left_fit = fit_poly(left_points)
+    right_fit = fit_poly(right_points)
+
+    left_fit_avg = weighted_average_fit(left_fit_history, left_fit)
+    right_fit_avg = weighted_average_fit(right_fit_history, right_fit)
+
+    blank = np.zeros_like(resized_frame)
+
+    draw_curve(blank, left_fit_avg, color=(255, 0, 0))
+    draw_curve(blank, right_fit_avg, color=(0, 255, 0))
+
+    combined = cv2.addWeighted(resized_frame, 0.8, blank, 1, 1)
+    return combined
+
+cap = cv2.VideoCapture(r'dataset/test2.mp4')
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    output = process_frame(frame)
+    cv2.imshow('Lane Detection -  AsMetOP', output)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+
+
+# %%
