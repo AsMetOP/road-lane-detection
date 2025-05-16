@@ -19,9 +19,10 @@ By combining OpenCV with efficient algorithms, this project demonstrates how dee
 
 # 📁 Project Structure
 📁 Road-Lane-Detection/
-├── 📁 dataset/           # Contains images or videos for lane detection
-├── 📁 venv/              # Python virtual environment
-└── 📓 LaneDetection.ipynb # Main Jupyter notebook 
+
+├── 📁 dataset/           
+├── 📁 venv/              
+└── 📓 LaneDetection.ipynb 
 
 ## 🚀 Technologies Used
 - Python
@@ -31,16 +32,21 @@ By combining OpenCV with efficient algorithms, this project demonstrates how dee
 - Matplotlib
 
 ## 1. Clone the Repository
+
+```bash
 git clone https://github.com/AsMetOP/road-lane-detection.git
 cd road-lane-detection
 
+```
+
 ## 2. Create a virtual environment
+```bash
 python -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
+
+```
 
 ## 3. Install all dependencies:
 ```bash
 pip install -r requirements.txt
 
-✨ Contributions
-Open to improvements and suggestions! Feel free to fork the repo, create issues, or submit pull requests.
